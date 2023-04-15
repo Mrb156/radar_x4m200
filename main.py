@@ -31,33 +31,40 @@ fast_sample_point = int(
 
 
 mc = pymoduleconnector.ModuleConnector(device_name)
-# app = mc.get_x4m200()
-# try:
-#     app.set_sensor_mode(0x13, 0)  # Make sure no profile is running.
-# except RuntimeError:
-#     # Profile not running, OK
-#     pass
+app = mc.get_x4m200()
+try:
+    app.set_sensor_mode(0x13, 0)  # Make sure no profile is running.
+except RuntimeError:
+    # Profile not running, OK
+    pass
 
-# try:
-#     app.set_sensor_mode(0x12, 0)  # Manual mode.
-# except RuntimeError:
-#     # Maybe running XEP firmware only?
-#     pass
+try:
+    app.set_sensor_mode(0x12, 0)  # Manual mode.
+except RuntimeError:
+    # Maybe running XEP firmware only?
+    pass
 
 xep = mc.get_xep()
 # # Set DAC range
-# xep.x4driver_set_dac_min(900)
-# xep.x4driver_set_dac_max(1150)
+xep.x4driver_set_dac_min(900)
+xep.x4driver_set_dac_max(1150)
 
-# # Set integration
-# xep.x4driver_set_iterations(16)
-# xep.x4driver_set_pulses_per_step(26)
+# Set integration
+xep.x4driver_set_iterations(16)
+xep.x4driver_set_pulses_per_step(26)
 
-# # xep.x4driver_set_downconversion(int(baseband))
-# # Start streaming of data
-# xep.x4driver_set_fps(10)
-src = r"C:\Users\Morvai Barna\OneDrive - Széchenyi István Egyetem\TDK\!xethru\jegyzokonyv log\3524_sampletime60s/amp_matrix.txt"
-obj_amp_datamatrix = np.loadtxt(src)
+# xep.x4driver_set_downconversion(int(baseband))
+# Start streaming of data
+xep.x4driver_set_fps(10)
+
+source = r"C:\Users\Morvai Barna\OneDrive - Széchenyi István Egyetem\TDK\!xethru\ujlog\1917_sampletime60s"
+amp_matrix = source+"/amp_matrix.txt"
+pha_matrix = source+"/pha_matrix.txt"
+obj_amp_datamatrix = np.loadtxt(amp_matrix)
+obj_pha_datamatrix = np.loadtxt(pha_matrix)
+
+pha = np.array(obj_pha_datamatrix)
+amp = np.array(obj_amp_datamatrix)
 
 
 def slice_datamatrix(amp_datamatrix, start, end, FPS):
@@ -125,7 +132,7 @@ def get_data_matrix(sample_time, save=False):
             n += 1
 
     if save:
-        path = 'C:/Barna/SZE/!xethru/Respiratory-monitoring-master/Respiratory-monitoring-master/Source Code/X4M03/mycode' + str(new_time.minute) + \
+        path = r'C:\Users\Morvai Barna\OneDrive - Széchenyi István Egyetem\TDK\!xethru\ujlog' + str(new_time.minute) + \
             str(new_time.second) + '_sampletime%ds' % sample_time
         folder = os.path.exists(path)
         if not folder:
@@ -142,6 +149,9 @@ def get_data_matrix(sample_time, save=False):
 
 
 def plot_frame(amp_matrix, pha_matrix, sample_time):
+    # amp = np.array(amp_matrix)
+    # pha = np.array(pha_matrix)
+
 
     ax_x = np.arange((area_start-1e-5),
                      (area_end-1e-5)+bin_length, bin_length)
@@ -153,8 +163,8 @@ def plot_frame(amp_matrix, pha_matrix, sample_time):
 
     amp_fig.set_title("Amplitude")
     pha_fig.set_title("Phase")
-    line1, = amp_fig.plot(ax_x, amp_matrix[0])
-    line2, = pha_fig.plot(ax_x, pha_matrix[0])
+    line1, = amp_fig.plot(ax_x, amp[0])
+    line2, = pha_fig.plot(ax_x, pha[0])
 
     def animate(i):
         fig.suptitle("frame count:%d" % i)
@@ -318,11 +328,11 @@ def Fft(amp_datamatrix):
         y = signal.sosfilt(sos, data)
         return y
 
-    b, a = signal.butter(8, 0.08, 'lowpass')
-    filtedData = signal.filtfilt(b, a, rangebin_data)
-    c, d = signal.butter(8, 0.01, 'highpass')
+    # b, a = signal.butter(10, 0.08, 'lowpass')
+    # filtedData = signal.filtfilt(b, a, rangebin_data)
+    c, d = signal.butter(3, 0.01, 'highpass')
     filtedData = signal.filtfilt(c, d, rangebin_data)
-    # filtedData = butter_bandpass_filter(rangebin_data, 0.32, 0.34, FPS)
+    filtedData = butter_bandpass_filter(rangebin_data, 1, 1.5 , FPS)
 
     for i in range(30):
         filtered_matrix = filtedData[i*17:(i+30)*17]
@@ -346,15 +356,9 @@ def Fft(amp_datamatrix):
     fs = FPS
     N = fs*sample_time
 
-    fd_data2 = abs(fd_data)*2/N
-    print(np.where(fd_data2 < np.max(fd_data2)))
-    
-    RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
+    RPM = np.where(abs(fd_data) == maxpower)[0][0]
 
-    print(np.where(amp_datamatrix[0] == np.max(amp_datamatrix[0]))[0][0])
-
-
-    breathingFreq = RPM/sample_time
+    breathingFreq = RPM * fs / N
 
     raw_signal = fig.add_subplot(3, 1, 1)
     fft_signal = fig.add_subplot(3, 1, 2)
@@ -373,7 +377,7 @@ def Fft(amp_datamatrix):
     fft_signal.set_title("FFT jel")
     fft_signal.set_xlabel("Freq(Hz)\nLégzési frekvencia: ~{}Hz\nRPM: {}".format(breathingFreq, RPM))
     fft_signal.set_ylabel("FFT amplitudó")
-    # fft_signal.set_xlim(0, breathingFreq+0.5)
+    # fft_signal.set_xlim(1.1, 1.3)
 
     ifft_signal.set_title("Visszaállított komponens(ek)")
     ifft_signal.set_xlabel("Idő (s)")
@@ -398,16 +402,16 @@ def Fft(amp_datamatrix):
 
 
 def main():
-    #clear_buffer(mc)
-    #reset(device_name)
-    #get_data_matrix(sample_time, save=True)
+    # clear_buffer(mc)
+    # reset(device_name)
+    # get_data_matrix(sample_time, save=True)
 
     #FFT_fasttime(obj_amp_datamatrix, 32, FPS, sample_time)
     #find_peakline(obj_amp_datamatrix)
     Fft(obj_amp_datamatrix)
-    #lowpass_filter(obj_amp_datamatrix, 32, FPS, sample_time)
+    # lowpass_filter(obj_amp_datamatrix, 32, FPS, sample_time)
 
-    #plot_frame(a, b, sample_time)
+    #plot_frame(obj_amp_datamatrix, obj_pha_datamatrix, sample_time)
 
 
 if __name__ == "__main__":
