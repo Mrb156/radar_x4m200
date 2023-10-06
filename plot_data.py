@@ -34,7 +34,7 @@ def findTime(folderName):
     end = folderName.find("s")
     return int(folderName[start + 1:end])
 
-def perform_fft_analysis(folder):
+def perform_fft_analysis(folder, fps):
     """
     Perform FFT analysis on radar data stored in a specified folder.
 
@@ -44,8 +44,8 @@ def perform_fft_analysis(folder):
     Returns:
     - None
     """
-    data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/" + str(folder) + "/amp_matrix.txt"
-    fps = 17
+    data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp_matrix.txt"
+    fps = fps
     sample_time = findTime(folder)  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
     slice_start_time = 0
@@ -79,13 +79,28 @@ def perform_fft_analysis(folder):
     highpass_filtered_data = butter_bandpass_filter(lowpass_filtered_data, 0.01, 0.34, fps, order=8)
 
     # Calculate breath rate from the filtered data
-    for i in range(30):
-        data_segment = highpass_filtered_data[i * fps:(i + 30) * fps]
+    for i in range(1):
+        data_segment = highpass_filtered_data[i * fps:(i + 1) * fps]
         doublediff = np.diff(np.sign(np.diff(data_segment)))
         peak_locations = np.where(doublediff == -2)[0] + 1
         breath_rate.append(peak_locations.shape[0] * 2)
-    print(breath_rate)
+    
 
+    ###############################
+    # Calculate breath rate from the filtered data
+    for i in range(int(sample_time / 30)):
+        data_segment = highpass_filtered_data[i * 30 * fps:(i + 1) * 30 * fps]
+        doublediff = np.diff(np.sign(np.diff(data_segment)))
+        peak_locations = np.where(doublediff == -2)[0] + 1
+        breath_rate.append(peak_locations.shape[0] * 2)
+
+    # Calculate the average breathing rate over the entire sample
+    avg_breath_rate = np.mean(breath_rate)
+    # Calculate breathing frequency
+    breathing_frequency = avg_breath_rate / sample_time
+    ###############################
+    print("breathing fr: ", breathing_frequency)
+    print(avg_breath_rate)
     # Perform FFT on the filtered data
     fft_data = np.fft.rfft(highpass_filtered_data)
     max_amplitude = np.max(np.abs(fft_data))
@@ -107,9 +122,9 @@ def perform_fft_analysis(folder):
     ifft_signal = fig.add_subplot(3, 1, 3)
 
     # Define x-axis for the signals
-    time_axis = np.arange(1020 * sample_minutes) / fps
+    time_axis = np.arange((fps*sample_time) * sample_minutes) / fps
     frequency_axis = np.arange(0, (fps / N) * ((N / 2) + 1), fps / N)
-    ifft_time_axis = np.arange(510 * sample_minutes + 1) / 8.5
+    ifft_time_axis = np.arange((fps*30) * sample_minutes + 1) / 8.5
 
     # Set titles and labels for the subplots
     raw_signal.set_title("Original Signal")
