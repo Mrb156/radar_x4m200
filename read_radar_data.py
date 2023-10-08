@@ -81,6 +81,7 @@ class X4m200_reader:
         old_time = datetime.datetime.now()
         print(old_time)
         n = 0
+        seconds = 0
         while n < row:
             new_time = datetime.datetime.now()
             interval = (new_time - old_time).microseconds
@@ -90,7 +91,9 @@ class X4m200_reader:
                 amp_matrix[n] = ampli_data
                 pha_matrix[n] = phase_data
                 n += 1
-
+                if n % self.FPS == 0:
+                    seconds += 1
+                    print(f"{seconds} second(s) passed")
        
         folder_name = str(new_time.minute) + str(new_time.second) + 'time%ds' % self.sample_time
         path = 'C:\Barna\sze/radar/radar_x4m200\meresek/' + folder_name
