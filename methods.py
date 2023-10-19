@@ -1,4 +1,4 @@
-
+from time import sleep
 
 def calc_max_fps(prf, D, dac_min, dac_max, iterations, pulses_per_step):
     # Calculate the maximum frames per second (FPS) of a radar system based on the given parameters
@@ -20,3 +20,11 @@ def calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, FPS):
     pulses_per_step = (prf_hz * D) / ((dac_max - (dac_min + 1)) * iterations * FPS)
 
     return int(pulses_per_step)
+
+def countdown():
+    # countdown from 3 seconds
+    for i in range(3, 0, -1):
+        print(i)
+        sleep(1)
+    
+    print("Measurement starting after the 2nd beep")
