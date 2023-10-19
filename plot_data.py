@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from scipy import signal, fftpack
+import methods as m
 
 # TODO: Add comprehensive documentation and comments throughout the code
 
@@ -20,23 +21,9 @@ def slice_datamatrix(amp_datamatrix, start_time, end_time, fps):
     """
     return amp_datamatrix[start_time * fps:end_time * fps, :]
 
-def findTime(folderName):
-    """
-    Extract the time duration from a folder name.
 
-    Parameters:
-    - folderName (str): The folder name containing time information.
 
-    Returns:
-    - int: The extracted time duration in seconds.
-    """
-    start = folderName.find("e")
-    end = folderName.find("s")
-    time = int(folderName[start + 1:end])
-    print(time)
-    return time
-
-def perform_fft_analysis(folder, fps):
+def perform_fft_analysis(folder):
     """
     Perform FFT analysis on radar data stored in a specified folder.
 
@@ -47,8 +34,8 @@ def perform_fft_analysis(folder, fps):
     - None
     """
     data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp_matrix.txt"
-    fps = fps
-    sample_time = findTime(folder)  # Duration of data collection in seconds
+    fps = m.read_json_data(folder)["fps"]
+    sample_time = m.read_json_data(folder)["sample_time"]  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
     data_matrix = np.loadtxt(data_folder_path)  # Load data matrix from file
     ###########################################################
@@ -56,8 +43,8 @@ def perform_fft_analysis(folder, fps):
     # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
     ###########################################################
     range_bin_data = data_matrix[:, 32]  # Extract range bin data from the data matrix
-    # it is the 24th column of the data matrix
-    # the code should determine the distance between the measured person and the radar and than
+    # it is the Xth column of the data matrix
+    # TODO: the code should determine the distance between the measured person and the radar and than
     # get the proper column from the datamatrix (help: radar user guide from application notes)
 
     N = sample_time * fps # Number of samples in the signal 

@@ -6,8 +6,6 @@ import methods as m
 from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-#TODO: Refactor the folder name, so it conatains the duration, the fps, and the iteration number (maybe the pulses per step too)
-# or create a .dat file, which contains all the parameters (duration, fps, iteration number, pulses per step, etc.) <-- this is the better solution
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
                     area_start, area_end, sample_time):
@@ -23,6 +21,13 @@ class X4m200_reader:
         self.bin_length = 8*1.5e8/23.328e9
         self.fast_sample_point = int(
             (self.area_end - self.area_start)/self.bin_length + 2)
+        self.JSON_data = {
+            "device_name": self.device_name,
+            "fps": self.FPS,
+            "iterations": self.iterations,
+            "pulses_per_step": self.pulses_per_step,
+            "sample_time": self.sample_time,
+        }
         self.reset()
         self.mc = pymoduleconnector.ModuleConnector(self.device_name)
         self.xep = self.mc.get_xep()
@@ -104,6 +109,7 @@ class X4m200_reader:
             filename2 = path + '/pha_matrix.txt'
             np.savetxt(filename1, amp_matrix)
             np.savetxt(filename2, pha_matrix)
+            m.write_json_data(self.JSON_data, path+"/param.json")
         else:
             print('error:the folder exists!!!')
         print("data collection finished")

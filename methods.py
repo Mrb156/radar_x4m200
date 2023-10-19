@@ -1,4 +1,5 @@
 from time import sleep
+import json
 
 def calc_max_fps(prf, D, dac_min, dac_max, iterations, pulses_per_step):
     # Calculate the maximum frames per second (FPS) of a radar system based on the given parameters
@@ -28,3 +29,20 @@ def countdown():
         sleep(1)
     
     print("Measurement starting after the 2nd beep")
+
+def write_json_data(data, filename):
+    # Write JSON data to a file
+    try:
+        with open(filename, "w") as outfile:
+            json.dump(data, outfile)
+    except:
+        print("Error writing JSON data to file")
+
+def read_json_data(folderName):
+    with open('C:\Barna\sze/radar/radar_x4m200\meresek/'+folderName+'/param.json', 'r') as openfile:
+        # Reading from json file
+        json_object = json.load(openfile)
+        # get the sample_time from json_object
+        data = json_object
+
+    return data
