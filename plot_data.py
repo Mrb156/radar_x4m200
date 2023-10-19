@@ -32,7 +32,9 @@ def findTime(folderName):
     """
     start = folderName.find("e")
     end = folderName.find("s")
-    return int(folderName[start + 1:end])
+    time = int(folderName[start + 1:end])
+    print(time)
+    return time
 
 def perform_fft_analysis(folder, fps):
     """
@@ -48,69 +50,50 @@ def perform_fft_analysis(folder, fps):
     fps = fps
     sample_time = findTime(folder)  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
-    slice_start_time = 0
-    slice_end_time = sample_time
-    data_matrix = np.loadtxt(data_folder_path)
-    data_matrix = slice_datamatrix(data_matrix, slice_start_time, slice_end_time, fps)
-    data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
+    data_matrix = np.loadtxt(data_folder_path)  # Load data matrix from file
+    ###########################################################
+    # do I really need this line?
+    # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
+    ###########################################################
+    range_bin_data = data_matrix[:, 32]  # Extract range bin data from the data matrix
+    # it is the 24th column of the data matrix
+    # the code should determine the distance between the measured person and the radar and than
+    # get the proper column from the datamatrix (help: radar user guide from application notes)
 
-    sample_time = sample_time - slice_start_time
+    N = sample_time * fps # Number of samples in the signal 
 
-    range_bin_data = data_matrix[:, 32]
-    breath_rate = []
-
-    N = sample_time * fps
-
-    # Define Butterworth bandpass filter functions
-    def butter_bandpass(lowcut, highcut, fs, order=5):
-        nyquist = 0.5 * fs
-        low = lowcut / nyquist
-        high = highcut / nyquist
+    # Define bandpass filter
+    def butter_bandpass(lowcut, highcut, fs, order=8):
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
         sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
         return sos
 
     def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
         sos = butter_bandpass(lowcut, highcut, fs, order=order)
-        filtered_data = signal.sosfilt(sos, data)
-        return filtered_data
-
-    # Apply low-pass and high-pass filters to the range bin data
-    lowpass_filtered_data = butter_bandpass_filter(range_bin_data, 0.08, 0.34, fps, order=8)
-    highpass_filtered_data = butter_bandpass_filter(lowpass_filtered_data, 0.01, 0.34, fps, order=8)
-
-    # Calculate breath rate from the filtered data
-    for i in range(1):
-        data_segment = highpass_filtered_data[i * fps:(i + 1) * fps]
-        doublediff = np.diff(np.sign(np.diff(data_segment)))
-        peak_locations = np.where(doublediff == -2)[0] + 1
-        breath_rate.append(peak_locations.shape[0] * 2)
+        y = signal.sosfilt(sos, data)
+        return y
     
+    # Filter the data
+    b, a = signal.butter(8, 0.08, 'lowpass') 
+    filteredData = signal.filtfilt(b, a, range_bin_data)
+    c, d = signal.butter(8, 0.01, 'highpass') 
+    filteredData = signal.filtfilt(c, d, range_bin_data)
+    # filteredData = butter_bandpass_filter(range_bin_data, 1, 1.5, fps) #second parameter is the lowcut frequency, third is the highcut frequency
 
-    ###############################
-    # Calculate breath rate from the filtered data
-    for i in range(int(sample_time / 30)):
-        data_segment = highpass_filtered_data[i * 30 * fps:(i + 1) * 30 * fps]
-        doublediff = np.diff(np.sign(np.diff(data_segment)))
-        peak_locations = np.where(doublediff == -2)[0] + 1
-        breath_rate.append(peak_locations.shape[0] * 2)
-
-    # Calculate the average breathing rate over the entire sample
-    avg_breath_rate = np.mean(breath_rate)
-    # Calculate breathing frequency
-    breathing_frequency = avg_breath_rate / sample_time
-    ###############################
-    print("breathing fr: ", breathing_frequency)
-    print(avg_breath_rate)
     # Perform FFT on the filtered data
-    fft_data = np.fft.rfft(highpass_filtered_data)
-    max_amplitude = np.max(np.abs(fft_data))
-    indices = abs(fft_data) >= max_amplitude
+    fft_data = np.fft.rfft(filteredData)
+    max_power = np.max(np.abs(fft_data))
+    indices = abs(fft_data) >= max_power
     filtered_fft_data = fft_data * indices
     ifft_data = np.fft.ifft(filtered_fft_data)
 
     # Calculate RPM and peak location
-    max_amplitude_freq_index = np.where(np.abs(filtered_fft_data) == np.max(np.abs(filtered_fft_data)))[0][0]
-    RPM = max_amplitude_freq_index / sample_minutes
+    fd_data2 = abs(fft_data)*2/N
+    RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
+    # max_amplitude_freq_index = np.where(np.abs(filtered_fft_data) == np.max(np.abs(filtered_fft_data)))[0][0]
+    # RPM = max_amplitude_freq_index / sample_minutes
 
     # Calculate breathing frequency
     breathing_frequency = RPM / sample_time
