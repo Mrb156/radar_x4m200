@@ -6,7 +6,8 @@ import methods as m
 from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-#TODO: countdown timer for data collection
+#TODO: Refactor the folder name, so it conatains the duration, the fps, and the iteration number (maybe the pulses per step too)
+# or create a .dat file, which contains all the parameters (duration, fps, iteration number, pulses per step, etc.) <-- this is the better solution
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
                     area_start, area_end, sample_time):
@@ -33,7 +34,7 @@ class X4m200_reader:
         xep.module_reset()
         mc.close()
         sleep(3)
-    
+
     def sys_init(self):
         app = self.mc.get_x4m200()
         try:
@@ -79,7 +80,6 @@ class X4m200_reader:
         pha_matrix = np.empty([row, col])
 
         old_time = datetime.datetime.now()
-        print(old_time)
         n = 0
         seconds = 0
         while n < row:
