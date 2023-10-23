@@ -23,7 +23,7 @@ def slice_datamatrix(amp_datamatrix, start_time, end_time, fps):
 
 
 
-def perform_fft_analysis(folder):
+def perform_fft_analysis(folder, bin):
     """
     Perform FFT analysis on radar data stored in a specified folder.
 
@@ -42,10 +42,8 @@ def perform_fft_analysis(folder):
     # do I really need this line?
     # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
     ###########################################################
-    range_bin_data = data_matrix[:, 32]  # Extract range bin data from the data matrix
+    range_bin_data = data_matrix[:, bin]  # Extract range bin data from the data matrix
     # it is the Xth column of the data matrix
-    # TODO: the code should determine the distance between the measured person and the radar and than
-    # get the proper column from the datamatrix (help: radar user guide from application notes)
 
     N = sample_time * fps # Number of samples in the signal 
 

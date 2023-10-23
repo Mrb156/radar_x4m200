@@ -1,3 +1,6 @@
+import sys
+import threading
+import time
 import numpy as np
 import datetime
 import os
@@ -143,4 +146,54 @@ class X4m200_reader:
 
         plt.show()
     
+    def plot_radar_raw_data_message(self):
+        def read_frame():
+            global bin_index
+            """Gets frame data from module"""
+            d = self.xep.read_message_data_float()  # wait until get data
+            frame = np.array(d.data)
+            # print('frame length:' + str(len(frame)))
+            # Convert the resulting frame to a complex array if downconversion is enabled
+            n = len(frame)
+            # convert frame to complex
+            frame = frame[:n // 2] + 1j * frame[n // 2:]
+            max_bin = np.argmax(frame) # find the index of the max value
+            num_bin = max_bin % self.xep.x4driver_get_frame_bin_count() # do I really need this line?
+            bin_index = num_bin
+            bin_txt.set_text('Target bin number: {} from {} bins'.format(str(num_bin), str(self.xep.x4driver_get_frame_bin_count())))
+            
+            #TODO: calculate the distance based on the bin number
+            range_resolution = 3e8 / (2 * 143e6) # how to get range resolution?
+            distance = num_bin * 6.95 # not accurate, just for demo
+            distance_txt.set_text('Target distance: {:.2f} cm'.format(distance))
+            return frame
 
+        def animate(i):
+            line.set_ydata(abs(read_frame()))  # update the data
+
+
+        fig = plt.figure()
+        fig.suptitle("Radar Raw Data")
+        # encrease the size of the text on the graph
+        plt.rcParams.update({'font.size': 15})
+        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
+        distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
+        ax = fig.add_subplot(1, 1, 1)
+        # keep graph in frame (FIT TO YOUR DATA), can be adjusted
+        ax.set_ylim(0, 0.05)
+        
+        frame = read_frame()
+        
+        frame = np.abs(frame)
+        
+        
+        line, = ax.plot(frame)
+
+        ani = FuncAnimation(fig, animate, interval=1)
+        try:
+            plt.show(block=False)
+        except:
+            print('Messages output finish!')
+        plt.pause(10)
+        plt.close()
+        return bin_index
