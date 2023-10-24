@@ -1,6 +1,4 @@
-import sys
-import threading
-import time
+import json
 import numpy as np
 import datetime
 import os
@@ -9,6 +7,8 @@ import methods as m
 from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+#TODO: show a plot while the data collection is running
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
                     area_start, area_end, sample_time):
@@ -22,15 +22,8 @@ class X4m200_reader:
         self.area_end = area_end
         self.sample_time = sample_time
         self.bin_length = 8*1.5e8/23.328e9
-        self.fast_sample_point = int(
-            (self.area_end - self.area_start)/self.bin_length + 2)
-        self.JSON_data = {
-            "device_name": self.device_name,
-            "fps": self.FPS,
-            "iterations": self.iterations,
-            "pulses_per_step": self.pulses_per_step,
-            "sample_time": self.sample_time,
-        }
+        self.fast_sample_point = int((self.area_end - self.area_start)/self.bin_length + 2)
+        self.bin_index = 0
         self.reset()
         self.mc = pymoduleconnector.ModuleConnector(self.device_name)
         self.xep = self.mc.get_xep()
@@ -78,74 +71,52 @@ class X4m200_reader:
         iq_vec = i_vec + 1j*q_vec
 
         ampli_data = abs(iq_vec)
-        phase_data = np.arctan2(q_vec, i_vec)
-        return ampli_data, phase_data
+        return ampli_data
 
-    def get_data_matrix(self):
+    def get_data_matrix(self, bin):        
         row = self.sample_time * self.FPS
         col = self.fast_sample_point
         amp_matrix = np.empty([row, col])
-        pha_matrix = np.empty([row, col])
 
         old_time = datetime.datetime.now()
         n = 0
         seconds = 0
+        new_time = datetime.datetime.now()
         while n < row:
+            old_time = new_time
             new_time = datetime.datetime.now()
             interval = (new_time - old_time).microseconds
             if interval > 1/self.FPS*1000:
-                old_time = new_time
-                ampli_data, phase_data = self.read_apdata()
+                ampli_data = self.read_apdata()
                 amp_matrix[n] = ampli_data
-                pha_matrix[n] = phase_data
                 n += 1
                 if n % self.FPS == 0:
                     seconds += 1
                     print(f"{seconds} second(s) passed")
        
         folder_name = str(new_time.minute) + str(new_time.second) + 'time%ds' % self.sample_time
-        path = 'C:\Barna\sze/radar/radar_x4m200\meresek/' + folder_name
+        path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
         folder = os.path.exists(path)
         if not folder:
             os.mkdir(path)
-            filename1 = path + '/amp_matrix.txt'
-            filename2 = path + '/pha_matrix.txt'
-            np.savetxt(filename1, amp_matrix)
-            np.savetxt(filename2, pha_matrix)
-            m.write_json_data(self.JSON_data, path+"/param.json")
+            amp_file = path + '\\amp_matrix.txt'
+            np.savetxt(amp_file, amp_matrix)
+            self.bin_index = bin
+            JSON_data = {
+            "device_name": self.device_name,
+            "fps": self.FPS,
+            "iterations": self.iterations,
+            "pulses_per_step": self.pulses_per_step,
+            "sample_time": self.sample_time,
+            "bin_index": int(self.bin_index),
+            }
+            m.write_json_data(JSON_data, path+"/param.json")
         else:
             print('error:the folder exists!!!')
         print("data collection finished")
         return folder_name
         
-    
-    def plot_frame(self, amp_matrix, pha_matrix, sample_time):
-
-        ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
-
-        fig = plt.figure()
-        amp_fig = fig.add_subplot(2,1,1)
-        pha_fig = fig.add_subplot(2,1,2)
-        amp_fig.set_ylim(0, 0.015)
-
-        amp_fig.set_title("Amplitude")
-        pha_fig.set_title("Phase") 
-        line1, = amp_fig.plot(ax_x, amp_matrix[0])
-        line2, = pha_fig.plot(ax_x, pha_matrix[0])
-
-
-        def animate(i):
-            fig.suptitle("frame count:%d" % i)
-            amplitude = amp_matrix[i]
-            phase = pha_matrix[i]
-            line1.set_ydata(amplitude)
-            line2.set_ydata(phase)
-            return line1,line2,
-
-        ani = FuncAnimation(fig, animate, frames = sample_time*self.FPS, interval=1/self.FPS*1000)
-
-        plt.show()
-    
+    #TODO: place a button on the GUI to end the data collection
     def plot_radar_raw_data_message(self):
         def read_frame():
             global bin_index
@@ -162,7 +133,7 @@ class X4m200_reader:
             bin_index = num_bin
             bin_txt.set_text('Target bin number: {} from {} bins'.format(str(num_bin), str(self.xep.x4driver_get_frame_bin_count())))
             
-            #TODO: calculate the distance based on the bin number
+            #TODO: calculate the distance based on the bin number -> devide the frame area according to the number of bins
             range_resolution = 3e8 / (2 * 143e6) # how to get range resolution?
             distance = num_bin * 6.95 # not accurate, just for demo
             distance_txt.set_text('Target distance: {:.2f} cm'.format(distance))

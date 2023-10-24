@@ -39,7 +39,7 @@ def write_json_data(data, filename):
         print("Error writing JSON data to file")
 
 def read_json_data(folderName):
-    with open('C:\Barna\sze/radar/radar_x4m200\meresek/'+folderName+'/param.json', 'r') as openfile:
+    with open('C:/Barna/sze/radar/radar_x4m200/meresek/'+folderName+'/param.json', 'r') as openfile:
         # Reading from json file
         json_object = json.load(openfile)
         # get the sample_time from json_object

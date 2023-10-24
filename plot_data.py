@@ -23,7 +23,7 @@ def slice_datamatrix(amp_datamatrix, start_time, end_time, fps):
 
 
 
-def perform_fft_analysis(folder, bin):
+def perform_fft_analysis(folder):
     """
     Perform FFT analysis on radar data stored in a specified folder.
 
@@ -38,11 +38,12 @@ def perform_fft_analysis(folder, bin):
     sample_time = m.read_json_data(folder)["sample_time"]  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
     data_matrix = np.loadtxt(data_folder_path)  # Load data matrix from file
+    bin_index = m.read_json_data(folder)["bin_index"]
     ###########################################################
     # do I really need this line?
     # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
     ###########################################################
-    range_bin_data = data_matrix[:, bin]  # Extract range bin data from the data matrix
+    range_bin_data = data_matrix[:, bin_index]  # Extract range bin data from the data matrix
     # it is the Xth column of the data matrix
 
     N = sample_time * fps # Number of samples in the signal 
@@ -96,7 +97,7 @@ def perform_fft_analysis(folder, bin):
 
     # Set titles and labels for the subplots
     raw_signal.set_title("Original Signal")
-    raw_signal.set_xlabel("Time (s)")
+    raw_signal.set_xlabel("Time (s)\nBin Index: {}".format(bin_index))
     raw_signal.set_ylabel("Amplitude")
 
     fft_signal.set_title("FFT Signal")
