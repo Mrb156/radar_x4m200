@@ -128,6 +128,7 @@ class X4m200_reader:
             n = len(frame)
             # convert frame to complex
             frame = frame[:n // 2] + 1j * frame[n // 2:]
+            frame = np.abs(frame)
             max_bin = np.argmax(frame) # find the index of the max value
             num_bin = max_bin % self.xep.x4driver_get_frame_bin_count() # do I really need this line?
             bin_index = num_bin
