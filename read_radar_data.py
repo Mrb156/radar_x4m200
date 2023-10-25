@@ -150,21 +150,24 @@ class X4m200_reader:
         bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
         distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
         ax = fig.add_subplot(1, 1, 1)
-        # keep graph in frame (FIT TO YOUR DATA), can be adjusted
-        
+        def onpick(event):
+            thisline = event.artist
+            xdata = thisline.get_xdata()
+            self.bin_index = xdata[0]
+            plt.close()
+
+        fig.canvas.mpl_connect('pick_event', onpick)
+
         frame = read_frame()   
         ax.set_ylim(0, 0.02)
         plt.xticks(range(0, len(frame), 5))
         
         line, = ax.plot(frame)
-        line2, = ax.plot(frame)
+        line2, = ax.plot(frame, picker=True, pickradius=5)
 
         ani = FuncAnimation(fig, animate, interval=1)
         try:
-            # plt.show(block=False)
             plt.show()
         except:
             print('Messages output finish!')
-        # plt.pause(10)
-        # plt.close()
         return self.bin_index
