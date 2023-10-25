@@ -119,7 +119,6 @@ class X4m200_reader:
     #TODO: place a button on the GUI to end the data collection
     def plot_radar_raw_data_message(self):
         def read_frame():
-            global bin_index
             """Gets frame data from module"""
             d = self.xep.read_message_data_float()  # wait until get data
             frame = np.array(d.data)
@@ -131,9 +130,8 @@ class X4m200_reader:
             frame = np.abs(frame)
             max_bin = np.argmax(frame) # find the index of the max value
             num_bin = max_bin % self.xep.x4driver_get_frame_bin_count() # do I really need this line?
-            bin_index = num_bin
-            bin_txt.set_text('Target bin number: {} from {} bins'.format(str(num_bin), str(self.xep.x4driver_get_frame_bin_count())))
-            
+            self.bin_index = num_bin
+            bin_txt.set_text('Target bin number: {} from {} bins'.format(str(self.bin_index), str(self.xep.x4driver_get_frame_bin_count())))
             #TODO: calculate the distance based on the bin number -> devide the frame area according to the number of bins
             range_resolution = 3e8 / (2 * 143e6) # how to get range resolution?
             distance = num_bin * 6.95 # not accurate, just for demo
@@ -141,7 +139,8 @@ class X4m200_reader:
             return frame
 
         def animate(i):
-            line.set_ydata(abs(read_frame()))  # update the data
+            line.set_ydata(read_frame())  # update the data
+            line2.set_data([self.bin_index,self.bin_index], [0,0.02])
 
 
         fig = plt.figure()
@@ -152,20 +151,20 @@ class X4m200_reader:
         distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
         ax = fig.add_subplot(1, 1, 1)
         # keep graph in frame (FIT TO YOUR DATA), can be adjusted
-        ax.set_ylim(0, 0.05)
         
-        frame = read_frame()
-        
-        frame = np.abs(frame)
-        
+        frame = read_frame()   
+        ax.set_ylim(0, 0.02)
+        plt.xticks(range(0, len(frame), 5))
         
         line, = ax.plot(frame)
+        line2, = ax.plot(frame)
 
         ani = FuncAnimation(fig, animate, interval=1)
         try:
-            plt.show(block=False)
+            # plt.show(block=False)
+            plt.show()
         except:
             print('Messages output finish!')
-        plt.pause(10)
-        plt.close()
-        return bin_index
+        # plt.pause(10)
+        # plt.close()
+        return self.bin_index
