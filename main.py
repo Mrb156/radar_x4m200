@@ -31,14 +31,15 @@ def run_radar():
     reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time)
     bin_index = reader.plot_radar_raw_data_message()
     print(bin_index)
-    m.countdown()
-    amp_matrix_path = reader.get_data_matrix()
+    #FIXME: because of the countdown the real timer jumps with 3 seconds
+    # m.countdown()
+    # amp_matrix_path = reader.get_data_matrix(bin_index)
 
 
-    folder = amp_matrix_path
-    return folder, bin_index
+    # folder = amp_matrix_path
+    return folder
 
-folder = "4348time60s"
-folder, bin_index = run_radar()
-plot_data.perform_fft_analysis(folder, bin_index)
+folder = "2012time60s"
+folder = run_radar()
+plot_data.perform_fft_analysis(folder)
 
