@@ -1,8 +1,11 @@
 import json
+from optparse import Values
+import time
 import numpy as np
 import datetime
 import os
 import pymoduleconnector
+from scipy import signal
 import methods as m
 from time import sleep
 import matplotlib.pyplot as plt
@@ -58,7 +61,6 @@ class X4m200_reader:
         self.xep.x4driver_set_frame_area_offset(0.18)
         self.xep.x4driver_set_frame_area(self.area_start, self.area_end)
         self.xep.x4driver_set_fps(self.FPS)
-
 
     def read_apdata(self):
         #read a frame
@@ -116,7 +118,6 @@ class X4m200_reader:
         print("data collection finished")
         return folder_name
         
-    #TODO: place a button on the GUI to end the data collection
     def plot_radar_raw_data_message(self):
         def read_frame():
             """Gets frame data from module"""
@@ -171,3 +172,93 @@ class X4m200_reader:
         except:
             print('Messages output finish!')
         return self.bin_index
+
+    def plot_real_time(self):  
+        #TODO: show the dominant frequency on the plot
+        #TODO: show the raw data on the plot and pick the target bin
+        def fft(data):
+            def butter_bandpass(lowcut, highcut, fs, order=8):
+                nyq = 0.5 * fs
+                low = lowcut / nyq
+                high = highcut / nyq
+                sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
+                return sos
+            def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
+                sos = butter_bandpass(lowcut, highcut, fs, order=order)
+                y = signal.sosfilt(sos, data)
+                return y
+            # Filter the data
+            b, a = signal.butter(8, 0.08, 'lowpass')
+            filteredData = signal.filtfilt(b, a, data)
+            c, d = signal.butter(8, 0.01, 'highpass')
+            filteredData = signal.filtfilt(c, d, data)
+            # filteredData = butter_bandpass_filter(data, 0.05, 1.5, self.FPS) #second parameter is the lowcut frequency, third is the highcut frequency
+
+            # Perform FFT on the filtered data
+            fft_data = np.fft.rfft(filteredData)
+            fft_data = np.abs(fft_data)
+            fd_data2 = abs(fft_data)*2/N
+            RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
+            # Calculate breathing frequency
+            breathing_frequency = RPM / self.sample_time
+            hz_txt.set_text('Dominant frequency: {}'.format(str(breathing_frequency)))
+            rpm_txt.set_text('RPM: {}'.format(str(RPM)))
+            
+            return fft_data
+            
+        def read_frame():
+            """Gets frame data from module"""
+            d = self.xep.read_message_data_float()
+            frame = np.array(d.data)
+            # Convert the resulting frame to a complex array if downconversion is enabled
+            n = len(frame)
+            # convert frame to complex
+            frame = frame[:n // 2] + 1j * frame[n // 2:]
+            frame = np.abs(frame)
+            return frame
+
+        fig = plt.figure()
+        raw_signal = fig.add_subplot(2, 1, 1) # 2 rows, 1 column, 1st plot
+        fft_signal = fig.add_subplot(2, 1, 2)
+
+        fft_signal.set_title("FFT Signal")
+        fft_signal.set_xlabel("Frequency (Hz)")
+        fft_signal.set_ylabel("FFT Amplitude")
+
+        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
+        hz_txt = fig.text(0.5, 0.85, 'Dominant frequency: ')
+        rpm_txt = fig.text(0.5, 0.8, 'RPM: ')
+
+        raw_signal.set_ylim(0, 0.03)
+        fft_signal.set_ylim(0, 0.7)
+        # fft_signal.set_xlim(0, 1.7)
+        
+        N = self.sample_time * self.FPS # Number of samples in the signal
+        values = [0] * N
+        #TODO: flip the time axis without flipping the data
+        time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
+        # time_axis = np.flip(time_axis)
+        frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 1), self.FPS / N)
+        line, = raw_signal.plot(time_axis, values)
+        line2, = fft_signal.plot(frequency_axis, fft(values))
+
+
+        def animate(i, values):
+            frame = read_frame()
+            bin_index = np.argmax(frame)
+            bin_txt.set_text('Target bin number: {}'.format(str(bin_index)))
+            values.append(frame[bin_index])
+            values = values[-N:]
+            raw_signal.set_ylim(np.min((values))/1.2, np.max((values))*1.2)
+            fft_signal.set_ylim(0, np.max(fft(values))*1.2)
+            # fft_signal.set_xlim(0, frequency_axis)
+            line.set_ydata(values)  # update the data
+            line2.set_ydata(fft(values))
+            return line,
+
+
+        ani = FuncAnimation(fig, animate, fargs=(values,), interval=1)
+        try:
+            plt.show()
+        except:
+            print('Messages output finish!')
