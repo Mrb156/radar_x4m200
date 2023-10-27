@@ -22,13 +22,15 @@ def calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, FPS):
 
     return int(pulses_per_step)
 
-def countdown():
-    # countdown from 3 seconds
-    for i in range(3, 0, -1):
-        print(i)
-        sleep(1)
+def countdown(t): 
     
-    print("Measurement starting after the 2nd beep")
+    while t: 
+        mins, secs = divmod(t, 60) 
+        timer = '{:02d}:{:02d}'.format(mins, secs) 
+        print(timer, end="\r") 
+        sleep(1) 
+        t -= 1
+    print('Measurement starting...')
 
 def write_json_data(data, filename):
     # Write JSON data to a file
