@@ -75,7 +75,7 @@ class X4m200_reader:
         ampli_data = abs(iq_vec)
         return ampli_data
 
-    def get_data_matrix(self, bin):        
+    def get_data_matrix(self, bin):
         row = self.sample_time * self.FPS
         col = self.fast_sample_point
         amp_matrix = np.empty([row, col])
@@ -94,7 +94,8 @@ class X4m200_reader:
                 n += 1
                 if n % self.FPS == 0:
                     seconds += 1
-                    print(f"{seconds} second(s) passed")
+                    timer = '{:02d} second(s) passed!'.format(seconds)
+                    print(timer, end="\r")
        
         folder_name = str(new_time.minute) + str(new_time.second) + 'time%ds' % self.sample_time
         path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
@@ -173,7 +174,7 @@ class X4m200_reader:
             print('Messages output finish!')
         return self.bin_index
 
-    def plot_real_time(self):  
+    def plot_real_time(self):
         #TODO: show the dominant frequency on the plot
         #TODO: show the raw data on the plot and pick the target bin
         def fft(data):

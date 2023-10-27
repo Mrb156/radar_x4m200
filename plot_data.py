@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from scipy import signal, fftpack
+from scipy import ifft, signal, fftpack
 import methods as m
 
 # TODO: Add comprehensive documentation and comments throughout the code
+# TODO: if the sample time is more than 60 seconds, than have the option to analize every 60 seconds
+# and plot the results in a subplot
+# and compare the results
 
 def slice_datamatrix(amp_datamatrix, start_time, end_time, fps):
     """
@@ -91,7 +94,8 @@ def perform_fft_analysis(folder):
     ifft_signal = fig.add_subplot(3, 1, 3)
 
     # Define x-axis for the signals
-    time_axis = np.arange((fps*sample_time) * sample_minutes) / fps
+    time_axis = np.arange((fps*sample_time)) / fps
+    # time_axis = np.arange((fps*sample_time) * sample_minutes) / fps
     frequency_axis = np.arange(0, (fps / N) * ((N / 2) + 1), fps / N)
     ifft_time_axis = np.arange((fps*30) * sample_minutes + 1) / 8.5
 
@@ -106,6 +110,7 @@ def perform_fft_analysis(folder):
 
     ifft_signal.set_title("Reconstructed Component(s)")
     ifft_signal.set_xlabel("Time (s)")
+    ifft_signal.set_xlim(0, 60)
     ifft_signal.set_ylabel("Amplitude")
 
     # Plot the signals

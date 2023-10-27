@@ -18,7 +18,7 @@ pulses_per_step = m.calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, F
 print(f"Pulses per step value: {pulses_per_step}")
 
 
-sample_time = 3600 # in seconds
+sample_time = 120 # in seconds
 
 fast_sample_point = int((area_end - area_start)/bin_length + 2) # number of sample points in the fast time domain
 
@@ -29,10 +29,12 @@ def run_radar():
 
 
     reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time)
-    bin_index = reader.plot_radar_raw_data_message()
+    bin_index = 32
+    # bin_index = reader.plot_radar_raw_data_message()
     print(bin_index)
     #FIXME: because of the countdown the real timer jumps with 3 seconds
-    # m.countdown()
+    m.countdown(3)
+    
     amp_matrix_path = reader.get_data_matrix(bin_index)
 
 
@@ -45,7 +47,7 @@ def run_realtime():
     reader.plot_real_time()
 
 # run_realtime()
-# folder = "3215time60s"
+folder = "3152time120s"
 folder = run_radar()
 plot_data.perform_fft_analysis(folder)
 
