@@ -58,7 +58,7 @@ class X4m200_reader:
         self.xep.x4driver_set_pulses_per_step(self.pulses_per_step)
         self.xep.x4driver_set_dac_min(self.dac_min)
         self.xep.x4driver_set_dac_max(self.dac_max)
-        self.xep.x4driver_set_frame_area_offset(0.18)
+        # self.xep.x4driver_set_frame_area_offset(3)
         self.xep.x4driver_set_frame_area(self.area_start, self.area_end)
         self.xep.x4driver_set_fps(self.FPS)
 
@@ -135,14 +135,15 @@ class X4m200_reader:
             self.bin_index = num_bin
             bin_txt.set_text('Target bin number: {} from {} bins'.format(str(self.bin_index), str(self.xep.x4driver_get_frame_bin_count())))
             #TODO: calculate the distance based on the bin number -> devide the frame area according to the number of bins
-            range_resolution = 3e8 / (2 * 143e6) # how to get range resolution?
-            distance = num_bin * 6.95 # not accurate, just for demo
-            distance_txt.set_text('Target distance: {:.2f} cm'.format(distance))
+            dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
+            distance_txt.set_text('Target distance: {:.2f} cm'.format((dist_arange[self.bin_index]+self.bin_length)*100))
             return frame
-
+        
+        ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
+        
         def animate(i):
             line.set_ydata(read_frame())  # update the data
-            line2.set_data([self.bin_index,self.bin_index], [0,0.02])
+            line2.set_data([ax_x[self.bin_index],ax_x[self.bin_index]], [0,0.02])
 
 
         fig = plt.figure()
@@ -152,6 +153,10 @@ class X4m200_reader:
         bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
         distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
         ax = fig.add_subplot(1, 1, 1)
+        ax.set_title("Raw Signal")
+        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel("Amplitude")
+
         def onpick(event):
             thisline = event.artist
             xdata = thisline.get_xdata()
@@ -160,12 +165,12 @@ class X4m200_reader:
 
         fig.canvas.mpl_connect('pick_event', onpick)
 
-        frame = read_frame()   
+        frame = read_frame()
         ax.set_ylim(0, 0.02)
-        plt.xticks(range(0, len(frame), 5))
-        
-        line, = ax.plot(frame)
-        line2, = ax.plot(frame, picker=True, pickradius=5)
+        # plt.xticks(range(0, len(frame), 1))
+
+        line, = ax.plot(ax_x, frame)
+        line2, = ax.plot(ax_x, frame, picker=True, pickradius=5)
 
         ani = FuncAnimation(fig, animate, interval=1)
         try:
@@ -177,6 +182,8 @@ class X4m200_reader:
     def plot_real_time(self):
         #TODO: show the dominant frequency on the plot
         #TODO: show the raw data on the plot and pick the target bin
+        dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
+
         def fft(data):
             def butter_bandpass(lowcut, highcut, fs, order=8):
                 nyq = 0.5 * fs
@@ -202,7 +209,7 @@ class X4m200_reader:
             RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
             # Calculate breathing frequency
             breathing_frequency = RPM / self.sample_time
-            hz_txt.set_text('Dominant frequency: {}'.format(str(breathing_frequency)))
+            hz_txt.set_text('Dominant frequency: {}'.format(round(breathing_frequency,2)))
             rpm_txt.set_text('RPM: {}'.format(str(RPM)))
             
             return fft_data
@@ -226,9 +233,16 @@ class X4m200_reader:
         fft_signal.set_xlabel("Frequency (Hz)")
         fft_signal.set_ylabel("FFT Amplitude")
 
-        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
-        hz_txt = fig.text(0.5, 0.85, 'Dominant frequency: ')
-        rpm_txt = fig.text(0.5, 0.8, 'RPM: ')
+        raw_signal.set_title("Raw Signal")
+        raw_signal.set_xlabel("Time (s)")
+        raw_signal.set_ylabel("Amplitude")
+
+        bin_txt = fig.text(0.01, 0.97,'Target bin number: ', fontsize=12)
+        dis_txt = fig.text(0.01, 0.94, 'Distance to target: ', fontsize=12)
+        hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
+        rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
+
+        plt.subplots_adjust(left=0.17, right= 0.97,hspace=0.5)
 
         raw_signal.set_ylim(0, 0.03)
         fft_signal.set_ylim(0, 0.7)
@@ -248,6 +262,8 @@ class X4m200_reader:
             frame = read_frame()
             bin_index = np.argmax(frame)
             bin_txt.set_text('Target bin number: {}'.format(str(bin_index)))
+            dis_txt.set_text('Distance to target: ~{} m'.format(round(dist_arange[bin_index],2)))
+
             values.append(frame[bin_index])
             values = values[-N:]
             raw_signal.set_ylim(np.min((values))/1.2, np.max((values))*1.2)
