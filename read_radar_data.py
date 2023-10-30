@@ -233,6 +233,7 @@ class X4m200_reader:
         raw_signal.set_title("Raw Signal")
         raw_signal.set_xlabel("Time (s)")
         raw_signal.set_ylabel("Amplitude")
+        raw_signal.set_xlim(60, 0)
 
         raw_dist.set_title("Distance")
         raw_dist.set_ylabel("Amplitude")
@@ -243,7 +244,6 @@ class X4m200_reader:
         hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
         
-        #FIXME: folder name always the same
         def save(event):
             self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
             path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
@@ -281,10 +281,9 @@ class X4m200_reader:
         #TODO: delete the first N values from the array
         values = [0] * N
         frame = read_frame()
-        #TODO: flip the time axis without flipping the data
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
+        time_axis = time_axis[::-1]
         ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
-        # time_axis = np.flip(time_axis)
         frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 1), self.FPS / N)
         line, = raw_signal.plot(time_axis, values)
         line2, = fft_signal.plot(frequency_axis, fft(values))
