@@ -1,6 +1,3 @@
-import json
-from optparse import Values
-import time
 from matplotlib.widgets import Button
 import numpy as np
 import datetime
@@ -11,6 +8,7 @@ import methods as m
 from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from scipy.signal import find_peaks
 
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
@@ -27,6 +25,8 @@ class X4m200_reader:
         self.bin_length = 8*1.5e8/23.328e9
         self.fast_sample_point = int((self.area_end - self.area_start)/self.bin_length + 2)
         self.bin_index = 0
+        self.folder_name = ''
+        self.values = []
         self.reset()
         self.mc = pymoduleconnector.ModuleConnector(self.device_name)
         self.xep = self.mc.get_xep()
@@ -179,7 +179,6 @@ class X4m200_reader:
         return self.bin_index
 
     def plot_real_time(self):
-        #TODO: show the raw data on the plot
         dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
 
         def fft(data):
@@ -224,8 +223,9 @@ class X4m200_reader:
             return frame
 
         fig = plt.figure()
-        raw_signal = fig.add_subplot(2, 1, 1) # 2 rows, 1 column, 1st plot
-        fft_signal = fig.add_subplot(2, 1, 2)
+        raw_signal = fig.add_subplot(3, 1, 1) # 2 rows, 1 column, 1st plot
+        fft_signal = fig.add_subplot(3, 1, 2)
+        raw_dist = fig.add_subplot(3, 1, 3)
 
         fft_signal.set_title("FFT Signal")
         fft_signal.set_xlabel("Frequency (Hz)")
@@ -234,21 +234,26 @@ class X4m200_reader:
         raw_signal.set_title("Raw Signal")
         raw_signal.set_xlabel("Time (s)")
         raw_signal.set_ylabel("Amplitude")
+        raw_signal.set_xlim(60, 0)
+
+        raw_dist.set_title("Distance")
+        raw_dist.set_ylabel("Amplitude")
+        raw_dist.set_xlabel("Distance (m)")
 
         bin_txt = fig.text(0.01, 0.97,'Target bin number: ', fontsize=12)
         dis_txt = fig.text(0.01, 0.94, 'Distance to target: ', fontsize=12)
         hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
         
-        folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
         def save(event):
-            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
+            self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
+            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
             folder = os.path.exists(path)
             if not folder:
                 os.mkdir(path)
                 amp_file = path + '\\amp.txt'
-                np.savetxt(amp_file, values[-N:])
-                print(len(values))
+                np.savetxt(amp_file, self.values[-N:])
+                print(len(self.values))
                 JSON_data = {
                 "device_name": self.device_name,
                 "fps": self.FPS,
@@ -274,36 +279,54 @@ class X4m200_reader:
         # fft_signal.set_xlim(0, 1.7)
         
         N = self.sample_time * self.FPS # Number of samples in the signal
-        values = [0] * N
-        #TODO: flip the time axis without flipping the data
+        self.values = [0] * N
+        frame = read_frame()
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
-        # time_axis = np.flip(time_axis)
+        time_axis = time_axis[::-1]
+        ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
         frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 1), self.FPS / N)
-        line, = raw_signal.plot(time_axis, values)
-        line2, = fft_signal.plot(frequency_axis, fft(values))
+        line, = raw_signal.plot(time_axis, self.values)
+        line2, = fft_signal.plot(frequency_axis, fft(self.values))
+        line3, = raw_dist.plot(ax_x, frame)
+        peaks, _ = find_peaks(frame, height=0)
+
+        points, = raw_dist.plot(ax_x[peaks], frame[peaks], "o", picker=True, pickradius=5)
+
+        def onpick(event):
+            thisline = event.artist
+            xdata = thisline.get_xdata()
+            ind = event.ind
+            self.bin_index = np.where(ax_x == xdata[ind])[0][0]
+            self.values = [0] * N
+
+        fig.canvas.mpl_connect('pick_event', onpick)
 
 
-        def animate(i, values):
+        def animate(i):
             frame = read_frame()
-            self.bin_index = np.argmax(frame)
-            
+            peaks, _ = find_peaks(frame, height=0)
+            # self.bin_index = np.argmax(frame)
             bin_txt.set_text('Target bin number: {}'.format(str(self.bin_index)))
             dis_txt.set_text('Distance to target: ~{} m'.format(round(dist_arange[self.bin_index]+self.bin_length,2)))
 
-            values.append(frame[self.bin_index])
-            values = values[-N:]
-            raw_signal.set_ylim(np.min((values))/1.2, np.max((values))*1.2)
-            fft_signal.set_ylim(0, np.max(fft(values))*1.2)
+            self.values.append(frame[self.bin_index])
+            self.values = self.values[-N:]
+            raw_signal.set_ylim(np.min((self.values))/1.2, np.max((self.values))*1.2)
+            fft_signal.set_ylim(0, np.max(fft(self.values))*1.2)
+            raw_dist.set_ylim(0, np.max(frame)*1.2)
             # fft_signal.set_xlim(0, frequency_axis)
-            line.set_ydata(values)  # update the data
-            line2.set_ydata(fft(values))
+            line.set_ydata(self.values)  # update the data
+            line2.set_ydata(fft(self.values))
+            line3.set_ydata(frame)
+            points.set_data(ax_x[peaks], frame[peaks])
+
             return line,
 
 
-        ani = FuncAnimation(fig, animate, fargs=(values,), interval=1)
+        ani = FuncAnimation(fig, animate, interval=1)
         try:
             plt.show()
         except:
             print('Messages output finish!')
-        print(folder_name)
-        return folder_name
+        print(self.folder_name)
+        return self.folder_name
