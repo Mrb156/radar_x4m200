@@ -46,7 +46,7 @@ def run_realtime():
     reader.plot_real_time()
 
 run_realtime()
-# folder = "3152time120s"
+# folder = "5636time60s"
 # folder = run_radar()
 # plot_data.perform_fft_analysis(folder)
 

@@ -279,7 +279,6 @@ class X4m200_reader:
         # fft_signal.set_xlim(0, 1.7)
         
         N = self.sample_time * self.FPS # Number of samples in the signal
-        #TODO: delete the first N self.values from the array
         self.values = [0] * N
         frame = read_frame()
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
