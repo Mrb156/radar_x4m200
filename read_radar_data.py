@@ -25,6 +25,7 @@ class X4m200_reader:
         self.bin_length = 8*1.5e8/23.328e9
         self.fast_sample_point = int((self.area_end - self.area_start)/self.bin_length + 2)
         self.bin_index = 0
+        self.folder_name = ''
         self.reset()
         self.mc = pymoduleconnector.ModuleConnector(self.device_name)
         self.xep = self.mc.get_xep()
@@ -177,7 +178,6 @@ class X4m200_reader:
         return self.bin_index
 
     def plot_real_time(self):
-        #TODO: show the raw data on the plot
         dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
 
         def fft(data):
@@ -244,9 +244,9 @@ class X4m200_reader:
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
         
         #FIXME: folder name always the same
-        folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
         def save(event):
-            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
+            self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
+            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
             folder = os.path.exists(path)
             if not folder:
                 os.mkdir(path)
@@ -329,5 +329,5 @@ class X4m200_reader:
             plt.show()
         except:
             print('Messages output finish!')
-        print(folder_name)
-        return folder_name
+        print(self.folder_name)
+        return self.folder_name
