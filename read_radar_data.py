@@ -26,6 +26,7 @@ class X4m200_reader:
         self.fast_sample_point = int((self.area_end - self.area_start)/self.bin_length + 2)
         self.bin_index = 0
         self.folder_name = ''
+        self.values = []
         self.reset()
         self.mc = pymoduleconnector.ModuleConnector(self.device_name)
         self.xep = self.mc.get_xep()
@@ -251,8 +252,8 @@ class X4m200_reader:
             if not folder:
                 os.mkdir(path)
                 amp_file = path + '\\amp.txt'
-                np.savetxt(amp_file, values[-N:])
-                print(len(values))
+                np.savetxt(amp_file, self.values[-N:])
+                print(len(self.values))
                 JSON_data = {
                 "device_name": self.device_name,
                 "fps": self.FPS,
@@ -278,52 +279,52 @@ class X4m200_reader:
         # fft_signal.set_xlim(0, 1.7)
         
         N = self.sample_time * self.FPS # Number of samples in the signal
-        #TODO: delete the first N values from the array
-        values = [0] * N
+        #TODO: delete the first N self.values from the array
+        self.values = [0] * N
         frame = read_frame()
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
         time_axis = time_axis[::-1]
         ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
         frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 1), self.FPS / N)
-        line, = raw_signal.plot(time_axis, values)
-        line2, = fft_signal.plot(frequency_axis, fft(values))
+        line, = raw_signal.plot(time_axis, self.values)
+        line2, = fft_signal.plot(frequency_axis, fft(self.values))
         line3, = raw_dist.plot(ax_x, frame)
         peaks, _ = find_peaks(frame, height=0)
 
         points, = raw_dist.plot(ax_x[peaks], frame[peaks], "o", picker=True, pickradius=5)
-
 
         def onpick(event):
             thisline = event.artist
             xdata = thisline.get_xdata()
             ind = event.ind
             self.bin_index = np.where(ax_x == xdata[ind])[0][0]
+            self.values = [0] * N
 
         fig.canvas.mpl_connect('pick_event', onpick)
 
 
-        def animate(i, values):
+        def animate(i):
             frame = read_frame()
             peaks, _ = find_peaks(frame, height=0)
             # self.bin_index = np.argmax(frame)
             bin_txt.set_text('Target bin number: {}'.format(str(self.bin_index)))
             dis_txt.set_text('Distance to target: ~{} m'.format(round(dist_arange[self.bin_index]+self.bin_length,2)))
 
-            values.append(frame[self.bin_index])
-            values = values[-N:]
-            raw_signal.set_ylim(np.min((values))/1.2, np.max((values))*1.2)
-            fft_signal.set_ylim(0, np.max(fft(values))*1.2)
+            self.values.append(frame[self.bin_index])
+            self.values = self.values[-N:]
+            raw_signal.set_ylim(np.min((self.values))/1.2, np.max((self.values))*1.2)
+            fft_signal.set_ylim(0, np.max(fft(self.values))*1.2)
             raw_dist.set_ylim(0, np.max(frame)*1.2)
             # fft_signal.set_xlim(0, frequency_axis)
-            line.set_ydata(values)  # update the data
-            line2.set_ydata(fft(values))
+            line.set_ydata(self.values)  # update the data
+            line2.set_ydata(fft(self.values))
             line3.set_ydata(frame)
             points.set_data(ax_x[peaks], frame[peaks])
 
             return line,
 
 
-        ani = FuncAnimation(fig, animate, fargs=(values,), interval=1)
+        ani = FuncAnimation(fig, animate, interval=1)
         try:
             plt.show()
         except:
