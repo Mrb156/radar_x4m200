@@ -32,7 +32,6 @@ def run_radar():
     bin_index = 32
     bin_index = reader.plot_radar_raw_data_message()
     print(bin_index)
-    #FIXME: because of the countdown the real timer jumps with 3 seconds
     # m.countdown(3)
     
     # amp_matrix_path = reader.get_data_matrix(bin_index)

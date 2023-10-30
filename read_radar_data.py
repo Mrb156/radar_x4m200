@@ -12,7 +12,6 @@ from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-#TODO: show a plot while the data collection is running
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
                     area_start, area_end, sample_time):
@@ -135,7 +134,6 @@ class X4m200_reader:
             num_bin = max_bin % self.xep.x4driver_get_frame_bin_count() # do I really need this line?
             self.bin_index = num_bin
             bin_txt.set_text('Target bin number: {} from {} bins'.format(str(self.bin_index), str(self.xep.x4driver_get_frame_bin_count())))
-            #TODO: calculate the distance based on the bin number -> devide the frame area according to the number of bins
             dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
             distance_txt.set_text('Target distance: {:.2f} cm'.format((dist_arange[self.bin_index]+self.bin_length)*100))
             return frame
@@ -181,8 +179,7 @@ class X4m200_reader:
         return self.bin_index
 
     def plot_real_time(self):
-        #TODO: show the dominant frequency on the plot
-        #TODO: show the raw data on the plot and pick the target bin
+        #TODO: show the raw data on the plot
         dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
 
         def fft(data):
@@ -243,7 +240,6 @@ class X4m200_reader:
         hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
         
-        #TODO: 
         folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
         def save(event):
             path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
