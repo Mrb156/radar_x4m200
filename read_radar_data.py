@@ -1,6 +1,7 @@
 import json
 from optparse import Values
 import time
+from matplotlib.widgets import Button
 import numpy as np
 import datetime
 import os
@@ -241,6 +242,34 @@ class X4m200_reader:
         dis_txt = fig.text(0.01, 0.94, 'Distance to target: ', fontsize=12)
         hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
+        
+        #TODO: 
+        folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
+        def save(event):
+            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
+            folder = os.path.exists(path)
+            if not folder:
+                os.mkdir(path)
+                amp_file = path + '\\amp.txt'
+                np.savetxt(amp_file, values[-N:])
+                print(len(values))
+                JSON_data = {
+                "device_name": self.device_name,
+                "fps": self.FPS,
+                "iterations": self.iterations,
+                "pulses_per_step": self.pulses_per_step,
+                "sample_time": self.sample_time,
+                "bin_index": int(self.bin_index),
+                "distance(m)": round(dist_arange[self.bin_index]+self.bin_length, 2),
+                }
+                m.write_json_data(JSON_data, path+"/param.json")
+            else:
+                print('error:the folder exists!!!')
+            print("data collection finished")
+        
+        save_button_place = fig.add_axes([0.01, 0.05, 0.1, 0.075])
+        save_button = Button(save_button_place, 'Save')
+        save_button.on_clicked(save)
 
         plt.subplots_adjust(left=0.17, right= 0.97,hspace=0.5)
 
@@ -260,11 +289,12 @@ class X4m200_reader:
 
         def animate(i, values):
             frame = read_frame()
-            bin_index = np.argmax(frame)
-            bin_txt.set_text('Target bin number: {}'.format(str(bin_index)))
-            dis_txt.set_text('Distance to target: ~{} m'.format(round(dist_arange[bin_index],2)))
+            self.bin_index = np.argmax(frame)
+            
+            bin_txt.set_text('Target bin number: {}'.format(str(self.bin_index)))
+            dis_txt.set_text('Distance to target: ~{} m'.format(round(dist_arange[self.bin_index]+self.bin_length,2)))
 
-            values.append(frame[bin_index])
+            values.append(frame[self.bin_index])
             values = values[-N:]
             raw_signal.set_ylim(np.min((values))/1.2, np.max((values))*1.2)
             fft_signal.set_ylim(0, np.max(fft(values))*1.2)
@@ -279,3 +309,5 @@ class X4m200_reader:
             plt.show()
         except:
             print('Messages output finish!')
+        print(folder_name)
+        return folder_name

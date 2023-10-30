@@ -1,3 +1,4 @@
+import dis
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -36,17 +37,23 @@ def perform_fft_analysis(folder):
     Returns:
     - None
     """
-    data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp_matrix.txt"
-    fps = m.read_json_data(folder)["fps"]
-    sample_time = m.read_json_data(folder)["sample_time"]  # Duration of data collection in seconds
+    try:
+        data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp.txt"
+    except:
+        data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp_matrix.txt"
+
+    fps = int(m.read_json_data(folder)["fps"])
+    sample_time = int(m.read_json_data(folder)["sample_time"])  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
     data_matrix = np.loadtxt(data_folder_path)  # Load data matrix from file
-    bin_index = m.read_json_data(folder)["bin_index"]
+    bin_index = int(m.read_json_data(folder)["bin_index"])
+    distance = m.read_json_data(folder)["distance(m)"]
     ###########################################################
     # do I really need this line?
     # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
     ###########################################################
-    range_bin_data = data_matrix[:, bin_index]  # Extract range bin data from the data matrix
+    range_bin_data = data_matrix  # Extract range bin data from the data matrix
+    print(range_bin_data.shape)
     # it is the Xth column of the data matrix
 
     N = sample_time * fps # Number of samples in the signal 
@@ -101,7 +108,7 @@ def perform_fft_analysis(folder):
 
     # Set titles and labels for the subplots
     raw_signal.set_title("Original Signal")
-    raw_signal.set_xlabel("Time (s)\nBin Index: {}".format(bin_index))
+    raw_signal.set_xlabel("Time (s)\nBin Index: {}\nDistance to person: {} m".format(bin_index, distance))
     raw_signal.set_ylabel("Amplitude")
 
     fft_signal.set_title("FFT Signal")
