@@ -68,6 +68,8 @@ class X4m200_reader:
         data = self.xep.read_message_data_float().data
         data_length = len(data)
 
+        # iq sample is complex, so the length of data is half of the length of data
+        # iq sampling
         i_vec = np.array(data[:data_length//2])
         q_vec = np.array(data[data_length//2:])
         iq_vec = i_vec + 1j*q_vec
@@ -112,6 +114,9 @@ class X4m200_reader:
             "pulses_per_step": self.pulses_per_step,
             "sample_time": self.sample_time,
             "bin_index": int(self.bin_index),
+            "bin_length": self.bin_length,
+            "area_start": self.area_start,
+            "area_end": self.area_end,
             }
             m.write_json_data(JSON_data, path+"/param.json")
         else:
@@ -159,7 +164,7 @@ class X4m200_reader:
         def onpick(event):
             thisline = event.artist
             xdata = thisline.get_xdata()
-            self.bin_index = xdata[0]
+            self.bin_index = np.where(ax_x == xdata[0])[0][0]
             plt.close()
 
         fig.canvas.mpl_connect('pick_event', onpick)
@@ -262,6 +267,9 @@ class X4m200_reader:
                 "sample_time": self.sample_time,
                 "bin_index": int(self.bin_index),
                 "distance(m)": round(dist_arange[self.bin_index]+self.bin_length, 2),
+                "bin_length": self.bin_length,
+                "area_start": self.area_start,
+                "area_end": self.area_end,
                 }
                 m.write_json_data(JSON_data, path+"/param.json")
             else:
@@ -284,7 +292,7 @@ class X4m200_reader:
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
         time_axis = time_axis[::-1]
         ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
-        frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 1), self.FPS / N)
+        frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 0.5), self.FPS / N)
         line, = raw_signal.plot(time_axis, self.values)
         line2, = fft_signal.plot(frequency_axis, fft(self.values))
         line3, = raw_dist.plot(ax_x, frame)
