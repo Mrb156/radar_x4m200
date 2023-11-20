@@ -1,4 +1,3 @@
-from time import sleep
 import json
 
 def calc_max_fps(prf, D, dac_min, dac_max, iterations, pulses_per_step):
@@ -22,15 +21,6 @@ def calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, FPS):
 
     return int(pulses_per_step)
 
-def countdown(t): 
-    
-    while t: 
-        mins, secs = divmod(t, 60) 
-        timer = '{:02d}:{:02d}'.format(mins, secs) 
-        print(timer, end="\r") 
-        sleep(1) 
-        t -= 1
-    print('Measurement starting...')
 
 def write_json_data(data, filename):
     # Write JSON data to a file
@@ -40,6 +30,7 @@ def write_json_data(data, filename):
     except:
         print("Error writing JSON data to file")
 
+#TODO: edit a path to be more general
 def read_json_data(folderName):
     with open('C:/Barna/sze/radar/radar_x4m200/meresek/'+folderName+'/param.json', 'r') as openfile:
         # Reading from json file

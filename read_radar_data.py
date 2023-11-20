@@ -1,12 +1,12 @@
-from matplotlib.widgets import Button
-import numpy as np
-import datetime
 import os
 import pymoduleconnector
-from scipy import signal
 import methods as m
+import datetime
+import numpy as np
+from scipy import signal
 from time import sleep
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 from matplotlib.animation import FuncAnimation
 from scipy.signal import find_peaks
 
@@ -122,14 +122,14 @@ class X4m200_reader:
         else:
             print('error:the folder exists!!!')
         print("data collection finished")
+        print(folder_name)
         return folder_name
-        
+        #TODO: make it like the other picker
     def plot_radar_raw_data_message(self):
         def read_frame():
             """Gets frame data from module"""
             d = self.xep.read_message_data_float()  # wait until get data
             frame = np.array(d.data)
-            # print('frame length:' + str(len(frame)))
             # Convert the resulting frame to a complex array if downconversion is enabled
             n = len(frame)
             # convert frame to complex
@@ -143,23 +143,10 @@ class X4m200_reader:
             distance_txt.set_text('Target distance: {:.2f} cm'.format((dist_arange[self.bin_index]+self.bin_length)*100))
             return frame
         
-        ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
         
         def animate(i):
             line.set_ydata(read_frame())  # update the data
             line2.set_data([ax_x[self.bin_index],ax_x[self.bin_index]], [0,0.02])
-
-
-        fig = plt.figure()
-        fig.suptitle("Radar Raw Data")
-        # encrease the size of the text on the graph
-        plt.rcParams.update({'font.size': 15})
-        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
-        distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
-        ax = fig.add_subplot(1, 1, 1)
-        ax.set_title("Raw Signal")
-        ax.set_xlabel("Distance (m)")
-        ax.set_ylabel("Amplitude")
 
         def onpick(event):
             thisline = event.artist
@@ -167,12 +154,22 @@ class X4m200_reader:
             self.bin_index = np.where(ax_x == xdata[0])[0][0]
             plt.close()
 
+        ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
+        fig = plt.figure()
+        fig.suptitle("Radar Raw Data")
+        plt.rcParams.update({'font.size': 15})
+        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
+        distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_title("Raw Signal")
+        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel("Amplitude")
+        ax.set_ylim(0, 0.02)
+
+
         fig.canvas.mpl_connect('pick_event', onpick)
 
         frame = read_frame()
-        ax.set_ylim(0, 0.02)
-        # plt.xticks(range(0, len(frame), 1))
-
         line, = ax.plot(ax_x, frame)
         line2, = ax.plot(ax_x, frame, picker=True, pickradius=5)
 
@@ -193,29 +190,35 @@ class X4m200_reader:
                 high = highcut / nyq
                 sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
                 return sos
+            
             def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
                 sos = butter_bandpass(lowcut, highcut, fs, order=order)
                 y = signal.sosfilt(sos, data)
                 return y
+            
             # Filter the data
-            b, a = signal.butter(8, 0.08, 'lowpass')
-            filteredData = signal.filtfilt(b, a, data)
-            c, d = signal.butter(8, 0.01, 'highpass')
-            filteredData = signal.filtfilt(c, d, data)
-            # filteredData = butter_bandpass_filter(data, 0.05, 1.5, self.FPS) #second parameter is the lowcut frequency, third is the highcut frequency
+            # b, a = signal.butter(8, 0.08, 'lowpass')
+            # filteredData = signal.filtfilt(b, a, data)
+            # c, d = signal.butter(8, 0.01, 'highpass')
+            # filteredData = signal.filtfilt(c, d, data)
+            filteredData = butter_bandpass_filter(data, 0.2, 1.5, self.FPS) #second parameter is the lowcut frequency, third is the highcut frequency
 
             # Perform FFT on the filtered data
             fft_data = np.fft.rfft(filteredData)
             fft_data = np.abs(fft_data)
-            fd_data2 = abs(fft_data)*2/N
-            RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
+            RPM = np.where(fft_data == np.max(fft_data))[0][0]
             # Calculate breathing frequency
             breathing_frequency = RPM / self.sample_time
+
+            frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 0.5), self.FPS / N) # +0.5 because of the arange function does not include the last number
+            breathing_frequency = frequency_axis[RPM]
+
             hz_txt.set_text('Dominant frequency: {}'.format(round(breathing_frequency,2)))
             rpm_txt.set_text('RPM: {}'.format(str(RPM)))
             
             return fft_data
             
+        #TODO: maybe refactor this to call it from the method.py
         def read_frame():
             """Gets frame data from module"""
             d = self.xep.read_message_data_float()
@@ -227,6 +230,31 @@ class X4m200_reader:
             frame = np.abs(frame)
             return frame
 
+        def save(event):
+            self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
+            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
+            folder = os.path.exists(path)
+            if not folder:
+                os.mkdir(path)
+                amp_file = path + '\\amp.txt'
+                np.savetxt(amp_file, self.values[-N:])
+                JSON_data = {
+                "device_name": self.device_name,
+                "fps": self.FPS,
+                "iterations": self.iterations,
+                "pulses_per_step": self.pulses_per_step,
+                "sample_time": self.sample_time,
+                "bin_index": int(self.bin_index),
+                "distance(m)": round(dist_arange[self.bin_index]+self.bin_length, 2),
+                "bin_length": self.bin_length,
+                "area_start": self.area_start,
+                "area_end": self.area_end,
+                }
+                m.write_json_data(JSON_data, path+"/param.json")
+            else:
+                print('error:the folder exists!!!')
+            print("data collection finished")
+       
         fig = plt.figure()
         raw_signal = fig.add_subplot(3, 1, 1) # 2 rows, 1 column, 1st plot
         fft_signal = fig.add_subplot(3, 1, 2)
@@ -249,53 +277,28 @@ class X4m200_reader:
         dis_txt = fig.text(0.01, 0.94, 'Distance to target: ', fontsize=12)
         hz_txt = fig.text(0.01, 0.91, 'Dominant frequency: ', fontsize=12)
         rpm_txt = fig.text(0.01, 0.88, 'RPM: ', fontsize=12)
-        
-        def save(event):
-            self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
-            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
-            folder = os.path.exists(path)
-            if not folder:
-                os.mkdir(path)
-                amp_file = path + '\\amp.txt'
-                np.savetxt(amp_file, self.values[-N:])
-                print(len(self.values))
-                JSON_data = {
-                "device_name": self.device_name,
-                "fps": self.FPS,
-                "iterations": self.iterations,
-                "pulses_per_step": self.pulses_per_step,
-                "sample_time": self.sample_time,
-                "bin_index": int(self.bin_index),
-                "distance(m)": round(dist_arange[self.bin_index]+self.bin_length, 2),
-                "bin_length": self.bin_length,
-                "area_start": self.area_start,
-                "area_end": self.area_end,
-                }
-                m.write_json_data(JSON_data, path+"/param.json")
-            else:
-                print('error:the folder exists!!!')
-            print("data collection finished")
-        
+        plt.subplots_adjust(left=0.17, right= 0.97,hspace=0.5)
+        raw_signal.set_ylim(0, 0.03)
+        fft_signal.set_ylim(0, 0.7)
+        # fft_signal.set_xlim(0, 1.7)
+                
         save_button_place = fig.add_axes([0.01, 0.05, 0.1, 0.075])
         save_button = Button(save_button_place, 'Save')
         save_button.on_clicked(save)
 
-        plt.subplots_adjust(left=0.17, right= 0.97,hspace=0.5)
 
-        raw_signal.set_ylim(0, 0.03)
-        fft_signal.set_ylim(0, 0.7)
-        # fft_signal.set_xlim(0, 1.7)
         
         N = self.sample_time * self.FPS # Number of samples in the signal
         self.values = [0] * N
-        frame = read_frame()
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
         time_axis = time_axis[::-1]
+        frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 0.5), self.FPS / N) # +0.5 because of the arange function does not include the last number
+        raw_data, = raw_signal.plot(time_axis, self.values)
+        fft_line, = fft_signal.plot(frequency_axis, fft(self.values))
+        
+        frame = read_frame()
         ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
-        frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 0.5), self.FPS / N)
-        line, = raw_signal.plot(time_axis, self.values)
-        line2, = fft_signal.plot(frequency_axis, fft(self.values))
-        line3, = raw_dist.plot(ax_x, frame)
+        reflection_line, = raw_dist.plot(ax_x, frame)
         peaks, _ = find_peaks(frame, height=0)
 
         points, = raw_dist.plot(ax_x[peaks], frame[peaks], "o", picker=True, pickradius=5)
@@ -323,12 +326,12 @@ class X4m200_reader:
             fft_signal.set_ylim(0, np.max(fft(self.values))*1.2)
             raw_dist.set_ylim(0, np.max(frame)*1.2)
             # fft_signal.set_xlim(0, frequency_axis)
-            line.set_ydata(self.values)  # update the data
-            line2.set_ydata(fft(self.values))
-            line3.set_ydata(frame)
+            raw_data.set_ydata(self.values)
+            reflection_line.set_ydata(frame)
             points.set_data(ax_x[peaks], frame[peaks])
+            fft_line.set_ydata(fft(self.values))
 
-            return line,
+           # return line, # need this?
 
 
         ani = FuncAnimation(fig, animate, interval=1)
