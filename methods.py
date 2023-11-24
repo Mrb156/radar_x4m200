@@ -30,8 +30,9 @@ def write_json_data(data, filename):
     except:
         print("Error writing JSON data to file")
 
-def read_json_data(folderName):
-    with open('C:/Barna/sze/radar/radar_x4m200/meresek/'+folderName+'/param.json', 'r') as openfile:
+#TODO: edit a path to be more general
+def read_json_data(folderName, path):
+    with open(path+folderName+'/param.json', 'r') as openfile:
         # Reading from json file
         json_object = json.load(openfile)
         # get the sample_time from json_object

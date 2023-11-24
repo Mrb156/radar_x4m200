@@ -41,7 +41,7 @@ def main():
         reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time, path)
         reader.plot_real_time()
 
-    run_realtime()
+    # run_realtime()
     # # folder = "758time18000s"
     # folder = run_measure()
     # plot_data.perform_fft_analysis(folder)
@@ -68,12 +68,12 @@ def main():
         except IndexError:
             print("No device found!")
         folder = run_measure()
-        plot_data.perform_fft_analysis(folder)
+        plot_data.perform_fft_analysis(folder, path)
     elif args.method == "perform_fft_analysis":
         if args.folder is None:
             print("Please provide a folder for the perform_fft_analysis method")
         else:
-            plot_data.perform_fft_analysis(args.folder)
+            plot_data.perform_fft_analysis(args.folder, path)
     else:
         print(f"Unknown method: {args.method}")
 

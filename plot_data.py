@@ -11,7 +11,7 @@ import methods as m
 # and compare the results
 
 
-def perform_fft_analysis(folder):
+def perform_fft_analysis(folder, path):
     """
     Perform FFT analysis on radar data stored in a specified folder.
 
@@ -22,23 +22,23 @@ def perform_fft_analysis(folder):
     - None
     """
     matrix = False
-    data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp.txt"
+    data_folder_path = path + str(folder) + "/amp.txt"
     if not os.path.isfile(data_folder_path):
-        data_folder_path = r"C:\Barna\sze\radar\radar_x4m200/meresek/" + str(folder) + "/amp_matrix.txt"
+        data_folder_path = path + str(folder) + "/amp_matrix.txt"
         matrix = True
 
-    fps = int(m.read_json_data(folder)["fps"])
-    sample_time = int(m.read_json_data(folder)["sample_time"])  # Duration of data collection in seconds
+    fps = int(m.read_json_data(folder, path)["fps"])
+    sample_time = int(m.read_json_data(folder, path)["sample_time"])  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
     data = np.loadtxt(data_folder_path)  # Load data matrix from file
-    bin_index = int(m.read_json_data(folder)["bin_index"])
-    bin_length = float(m.read_json_data(folder)["bin_length"])
-    area_start = float(m.read_json_data(folder)["area_start"])
-    area_end = float(m.read_json_data(folder)["area_end"])
+    bin_index = int(m.read_json_data(folder, path)["bin_index"])
+    bin_length = float(m.read_json_data(folder, path)["bin_length"])
+    area_start = float(m.read_json_data(folder, path)["area_start"])
+    area_end = float(m.read_json_data(folder, path)["area_end"])
     dist_arange = np.arange(area_start, area_end, bin_length)
 
     try:
-        distance = m.read_json_data(folder)["distance(m)"]
+        distance = m.read_json_data(folder, path)["distance(m)"]
     except KeyError:
         distance = (dist_arange[bin_index]+bin_length)
     ###########################################################

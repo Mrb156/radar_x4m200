@@ -103,6 +103,9 @@ class X4m200_reader:
                     print(timer, end="\r")
        
         folder_name = str(new_time.minute) + str(new_time.second) + 'time%ds' % self.sample_time
+        isPath = os.path.exists(self.path)
+        if not isPath:
+            os.mkdir(self.path)
         path = self.path + folder_name
         folder = os.path.exists(path)
         if not folder:
