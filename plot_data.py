@@ -47,7 +47,7 @@ def perform_fft_analysis(folder):
     fps = int(m.read_json_data(folder)["fps"])
     sample_time = int(m.read_json_data(folder)["sample_time"])  # Duration of data collection in seconds
     sample_minutes = sample_time / 60  # Duration of data collection in minutes
-    data_matrix = np.loadtxt(data_folder_path)  # Load data matrix from file
+    data = np.loadtxt(data_folder_path)  # Load data matrix from file
     bin_index = int(m.read_json_data(folder)["bin_index"])
     bin_length = float(m.read_json_data(folder)["bin_length"])
     area_start = float(m.read_json_data(folder)["area_start"])
@@ -57,17 +57,14 @@ def perform_fft_analysis(folder):
     try:
         distance = m.read_json_data(folder)["distance(m)"]
     except KeyError:
-        distance = (dist_arange[bin_index]+bin_length)*100
+        distance = (dist_arange[bin_index]+bin_length)
     ###########################################################
     # do I really need this line?
-    # data_matrix[:, :4] = 0  # Zero out first 4 columns of the data
+    # data[:, :4] = 0  # Zero out first 4 columns of the data
     ###########################################################
     if matrix:
-        range_bin_data = data_matrix[:,bin_index]  # Extract range bin data from the data matrix
-    else:
-        range_bin_data = data_matrix  # Extract range bin data from the data matrix
-    print(range_bin_data.shape)
-    # it is the Xth column of the data matrix
+        data = data[:,bin_index]  # Extract bin data from the data matrix
+    # it is the bin_indexth column of the data matrix
 
     N = sample_time * fps # Number of samples in the signal 
 
@@ -86,10 +83,10 @@ def perform_fft_analysis(folder):
     
     # Filter the data
     b, a = signal.butter(8, 0.08, 'lowpass') 
-    filteredData = signal.filtfilt(b, a, range_bin_data)
+    filteredData = signal.filtfilt(b, a, data)
     c, d = signal.butter(8, 0.01, 'highpass') 
-    filteredData = signal.filtfilt(c, d, range_bin_data)
-    # filteredData = butter_bandpass_filter(range_bin_data, 1, 1.5, fps) #second parameter is the lowcut frequency, third is the highcut frequency
+    filteredData = signal.filtfilt(c, d, data)
+    # filteredData = butter_bandpass_filter(data, 1, 1.5, fps) #second parameter is the lowcut frequency, third is the highcut frequency
 
     # Perform FFT on the filtered data
     fft_data = np.fft.rfft(filteredData)
@@ -121,7 +118,7 @@ def perform_fft_analysis(folder):
 
     # Set titles and labels for the subplots
     raw_signal.set_title("Original Signal")
-    raw_signal.set_xlabel("Time (s)\nBin Index: {}\nDistance to person: {} cm".format(bin_index, round(distance,2)))
+    raw_signal.set_xlabel("Time (s)\nBin Index: {}\nDistance to person: {} m".format(bin_index, round(distance,2)))
     raw_signal.set_ylabel("Amplitude")
 
     fft_signal.set_title("FFT Signal")
@@ -134,7 +131,7 @@ def perform_fft_analysis(folder):
     ifft_signal.set_ylabel("Amplitude")
 
     # Plot the signals
-    line, = raw_signal.plot(time_axis, range_bin_data)
+    line, = raw_signal.plot(time_axis, data)
     line2, = fft_signal.plot(frequency_axis, abs(fft_data))
     line3, = ifft_signal.plot(ifft_time_axis, ifft_data)
 

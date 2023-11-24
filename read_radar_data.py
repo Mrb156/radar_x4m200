@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 from matplotlib.animation import FuncAnimation
 from scipy.signal import find_peaks
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
@@ -121,8 +123,8 @@ class X4m200_reader:
             m.write_json_data(JSON_data, path+"/param.json")
         else:
             print('error:the folder exists!!!')
+        print(self.folder_name)
         print("data collection finished")
-        print(folder_name)
         return folder_name
         #TODO: make it like the other picker
     def plot_radar_raw_data_message(self):
@@ -156,9 +158,8 @@ class X4m200_reader:
 
         ax_x = np.arange((self.area_start-1e-5), (self.area_end-1e-5)+self.bin_length, self.bin_length)
         fig = plt.figure()
-        fig.suptitle("Radar Raw Data")
         plt.rcParams.update({'font.size': 15})
-        bin_txt = fig.text(0.5, 0.9, 'Target bin number: ')
+        bin_txt = fig.text(0.5, 0.82, 'Target bin number: ')
         distance_txt = fig.text(0.5, 0.85, 'Target distance: ')
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Raw Signal")
@@ -179,10 +180,11 @@ class X4m200_reader:
         except:
             print('Messages output finish!')
         return self.bin_index
-
+    #BUG: can't do more than 60 seconds
     def plot_real_time(self):
+        print(self.sample_time)
         dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
-
+        #TODO: add ifft to the plot
         def fft(data):
             def butter_bandpass(lowcut, highcut, fs, order=8):
                 nyq = 0.5 * fs
@@ -197,11 +199,11 @@ class X4m200_reader:
                 return y
             
             # Filter the data
-            # b, a = signal.butter(8, 0.08, 'lowpass')
-            # filteredData = signal.filtfilt(b, a, data)
-            # c, d = signal.butter(8, 0.01, 'highpass')
-            # filteredData = signal.filtfilt(c, d, data)
-            filteredData = butter_bandpass_filter(data, 0.2, 1.5, self.FPS) #second parameter is the lowcut frequency, third is the highcut frequency
+            b, a = signal.butter(8, 0.08, 'lowpass')
+            filteredData = signal.filtfilt(b, a, data)
+            c, d = signal.butter(8, 0.01, 'highpass')
+            filteredData = signal.filtfilt(c, d, data)
+            # filteredData = butter_bandpass_filter(data, 0.2, 1.5, self.FPS) #second parameter is the lowcut frequency, third is the highcut frequency
 
             # Perform FFT on the filtered data
             fft_data = np.fft.rfft(filteredData)
@@ -292,6 +294,8 @@ class X4m200_reader:
         self.values = [0] * N
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
         time_axis = time_axis[::-1]
+        print(time_axis)
+        print(N)
         frequency_axis = np.arange(0, (self.FPS / N) * ((N / 2) + 0.5), self.FPS / N) # +0.5 because of the arange function does not include the last number
         raw_data, = raw_signal.plot(time_axis, self.values)
         fft_line, = fft_signal.plot(frequency_axis, fft(self.values))
@@ -334,10 +338,10 @@ class X4m200_reader:
            # return line, # need this?
 
 
+
         ani = FuncAnimation(fig, animate, interval=1)
         try:
             plt.show()
         except:
             print('Messages output finish!')
-        print(self.folder_name)
         return self.folder_name
