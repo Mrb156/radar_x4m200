@@ -14,7 +14,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 class X4m200_reader:
     def __init__(self, device_name, FPS, iterations, pulses_per_step, dac_min, dac_max,
-                    area_start, area_end, sample_time):
+                    area_start, area_end, sample_time, path):
         self.device_name = device_name
         self.FPS = FPS
         self.iterations = iterations
@@ -24,6 +24,7 @@ class X4m200_reader:
         self.area_start = area_start
         self.area_end = area_end
         self.sample_time = sample_time
+        self.path = path
         self.bin_length = 8*1.5e8/23.328e9
         self.fast_sample_point = int((self.area_end - self.area_start)/self.bin_length + 2)
         self.bin_index = 0
@@ -102,7 +103,7 @@ class X4m200_reader:
                     print(timer, end="\r")
        
         folder_name = str(new_time.minute) + str(new_time.second) + 'time%ds' % self.sample_time
-        path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + folder_name
+        path = self.path + folder_name
         folder = os.path.exists(path)
         if not folder:
             os.mkdir(path)
@@ -234,7 +235,7 @@ class X4m200_reader:
 
         def save(event):
             self.folder_name = str(datetime.datetime.now().minute) + str(datetime.datetime.now().second) + 'time%ds' % self.sample_time
-            path = 'C:\\Barna\\sze\\radar\\radar_x4m200\\meresek\\' + self.folder_name
+            path = self.path + self.folder_name
             folder = os.path.exists(path)
             if not folder:
                 os.mkdir(path)

@@ -24,6 +24,7 @@ def main():
     FPS = 17 # frames per second
     pulses_per_step = m.calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, FPS) # calculate the pulses per step based on the parameters
     sample_time = 60 # in seconds
+    path = r"measures/"
 
     # fast_sample_point = int((area_end - area_start)/bin_length + 2) # number of sample points in the fast time domain
 
@@ -31,7 +32,7 @@ def main():
         # Run the radar and save the data to a file
         device_name = auto()[0]
 
-        reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time)
+        reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time, path)
         bin_index = reader.plot_radar_raw_data_message()
         
         amp_matrix_path = reader.get_data_matrix(bin_index)
@@ -41,10 +42,10 @@ def main():
 
     def run_realtime():
         device_name = auto()[0]
-        reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time)
+        reader = X4m200_reader(device_name, FPS, iterations, pulses_per_step, dac_min, dac_max, area_start, area_end, sample_time, path)
         reader.plot_real_time()
 
-    # run_realtime()
+    run_realtime()
     # # folder = "758time18000s"
     # folder = run_measure()
     # plot_data.perform_fft_analysis(folder)
