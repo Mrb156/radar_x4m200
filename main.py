@@ -5,10 +5,6 @@ from pymoduleconnector.extras.auto import auto
 from argparse import ArgumentParser
 
 #TODO: store noise map in a file and use it to remove noise from the data
-#TODO: run the different functionalities from the command line
-#TODO: add an init file for the parameters, where the user can set the parameters
-#TODO: setup file for the project
-#TODO: rename the line variable names to be more specific
 
 def main():
 
@@ -23,7 +19,7 @@ def main():
     # FPS = m.calc_max_fps(prf, D, dac_min, dac_max, iterations, pulses_per_step) # calculate the FPS based on the parameters
     FPS = 17 # frames per second
     pulses_per_step = m.calc_pulses_per_step(prf, D, dac_min, dac_max, iterations, FPS) # calculate the pulses per step based on the parameters
-    sample_time = 60 # in seconds
+    sample_time = 120 # in seconds
     path = r"measures/"
 
     # fast_sample_point = int((area_end - area_start)/bin_length + 2) # number of sample points in the fast time domain

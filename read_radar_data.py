@@ -128,6 +128,7 @@ class X4m200_reader:
         print("data collection finished")
         return folder_name
         #TODO: make it like the other picker
+    
     def plot_radar_raw_data_message(self):
         def read_frame():
             """Gets frame data from module"""
@@ -181,11 +182,11 @@ class X4m200_reader:
         except:
             print('Messages output finish!')
         return self.bin_index
-    #BUG: can't do more than 60 seconds
+    
     def plot_real_time(self):
         print(self.sample_time)
         dist_arange = np.arange(self.area_start, self.area_end, self.bin_length)
-        #TODO: add ifft to the plot
+        
         def fft(data):
             def butter_bandpass(lowcut, highcut, fs, order=8):
                 nyq = 0.5 * fs
@@ -270,7 +271,7 @@ class X4m200_reader:
         raw_signal.set_title("Raw Signal")
         raw_signal.set_xlabel("Time (s)")
         raw_signal.set_ylabel("Amplitude")
-        raw_signal.set_xlim(60, 0)
+        raw_signal.set_xlim(self.sample_time, 0)
 
         raw_dist.set_title("Distance")
         raw_dist.set_ylabel("Amplitude")
@@ -290,7 +291,6 @@ class X4m200_reader:
         save_button.on_clicked(save)
 
 
-        
         N = self.sample_time * self.FPS # Number of samples in the signal
         self.values = [0] * N
         time_axis = np.arange((self.FPS*self.sample_time)) / self.FPS
@@ -336,7 +336,6 @@ class X4m200_reader:
             points.set_data(ax_x[peaks], frame[peaks])
             fft_line.set_ydata(fft(self.values))
 
-           # return line, # need this?
 
 
 

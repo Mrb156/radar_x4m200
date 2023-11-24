@@ -6,26 +6,9 @@ from matplotlib.animation import FuncAnimation
 from scipy import ifft, signal, fftpack
 import methods as m
 
-# TODO: Add comprehensive documentation and comments throughout the code
 # TODO: if the sample time is more than 60 seconds, than have the option to analize every 60 seconds
 # and plot the results in a subplot
 # and compare the results
-
-def slice_datamatrix(amp_datamatrix, start_time, end_time, fps):
-    """
-    Slice a data matrix based on specified start and end times and frames per second (FPS).
-
-    Parameters:
-    - amp_datamatrix (numpy.ndarray): The input data matrix.
-    - start_time (int): Start time in seconds.
-    - end_time (int): End time in seconds.
-    - fps (int): Frames per second.
-
-    Returns:
-    - numpy.ndarray: The sliced data matrix.
-    """
-    return amp_datamatrix[start_time * fps:end_time * fps, :]
-
 
 
 def perform_fft_analysis(folder):

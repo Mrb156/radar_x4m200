@@ -30,7 +30,6 @@ def write_json_data(data, filename):
     except:
         print("Error writing JSON data to file")
 
-#TODO: edit a path to be more general
 def read_json_data(folderName):
     with open('C:/Barna/sze/radar/radar_x4m200/meresek/'+folderName+'/param.json', 'r') as openfile:
         # Reading from json file
