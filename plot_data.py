@@ -43,14 +43,19 @@ def perform_fft_analysis(folder, path):
         distance = (dist_arange[bin_index]+bin_length)
     ###########################################################
     # do I really need this line?
-    # data[:, :4] = 0  # Zero out first 4 columns of the data
+    # data[:, :4] = 0
+    time_slice_start = 2600
+    time_slice_end = 2960
+    sample_time = time_slice_end - time_slice_start
+    sample_minutes = sample_time / 60
+    data = data[time_slice_start*fps:time_slice_end*fps, :]
     ###########################################################
     if matrix:
         data = data[:,bin_index]  # Extract bin data from the data matrix
     # it is the bin_indexth column of the data matrix
-
+    print("data shape: ", data.shape)
     N = sample_time * fps # Number of samples in the signal 
-
+    print("N: ", N)
     # Define bandpass filter
     def butter_bandpass(lowcut, highcut, fs, order=8):
         nyq = 0.5 * fs
@@ -79,13 +84,13 @@ def perform_fft_analysis(folder, path):
     ifft_data = np.fft.ifft(filtered_fft_data)
 
     # Calculate RPM and peak location
-    fd_data2 = abs(fft_data)*2/N
-    RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
-    # max_amplitude_freq_index = np.where(np.abs(filtered_fft_data) == np.max(np.abs(filtered_fft_data)))[0][0]
-    # RPM = max_amplitude_freq_index / sample_minutes
+    # fd_data2 = abs(fft_data)*2/N
+    # RPM = np.where(fd_data2 == np.max(fd_data2))[0][0]
+    max_amplitude_freq_index = np.where(np.abs(filtered_fft_data) == np.max(np.abs(filtered_fft_data)))[0][0]
+    RPM = round(max_amplitude_freq_index / sample_minutes, 1)
 
     # Calculate breathing frequency
-    breathing_frequency = RPM / sample_time
+    breathing_frequency = round(RPM / sample_minutes, 2)
 
     # Create subplots for the signals
     fig = plt.figure()
