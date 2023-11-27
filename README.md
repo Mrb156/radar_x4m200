@@ -18,10 +18,10 @@ For this purpose I used Anaconda Navigator, but you can use any virtual environm
 https://www.anaconda.com/download
 
 After the installation, You have to create a new environment. Navgite to the environments menu, hit the create button on the bottom of the window. 
-![](images\conda1.png)
+<img src="images/conda1.PNG"/>
 
 A new windows will appear, here give it name, something like "radar_env", and chose Python 3.6.13 for the package. Hit create. Wait for the process to finish.
-![](images\conda2.png)
+<img src="images/conda2.PNG"/>
 
 ### Module Connector
 
@@ -29,11 +29,11 @@ In this environment we need to install a few requirements. First of all, the dri
 https://github.com/novelda/Legacy-SW
 
 Download this folder. After that, in Anaconda Environments menu, click on your new environment. Wait for the load to finish, and click the little play button, and select "Open in terminal". 
-![](images\conda3.png)
+<img src="images/conda3.PNG"/>
 In the command prompt change the directory to where you put your Legcy-SW folder. More precicely to the ModuleConnector folder, and pick your OS's folder, and your Python version folder. In my example it will be: 
 
 C:\ ... \Legacy-SW\ModuleConnector\ModuleConnector-win32_win64-1\python36-win64
-![](images\conda4.png)
+<img src="images/conda4.PNG"/>
 
 We need to install some dependencies. For that, run the following command: `python -m pip install -r requirements.txt`
 
