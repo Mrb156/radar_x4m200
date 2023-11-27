@@ -42,20 +42,19 @@ def perform_fft_analysis(folder, path):
     except KeyError:
         distance = (dist_arange[bin_index]+bin_length)
     ###########################################################
-    # do I really need this line?
-    # data[:, :4] = 0
-    time_slice_start = 2600
-    time_slice_end = 2960
-    sample_time = time_slice_end - time_slice_start
-    sample_minutes = sample_time / 60
-    data = data[time_slice_start*fps:time_slice_end*fps, :]
+    # if sample_time and we want to slice the data matrix
+    # time_slice_start = 2600
+    # time_slice_end = 2960
+    # sample_time = time_slice_end - time_slice_start
+    # sample_minutes = sample_time / 60
+    # data = data[time_slice_start*fps:time_slice_end*fps, :]
     ###########################################################
     if matrix:
         data = data[:,bin_index]  # Extract bin data from the data matrix
     # it is the bin_indexth column of the data matrix
-    print("data shape: ", data.shape)
+    # print("data shape: ", data.shape)
     N = sample_time * fps # Number of samples in the signal 
-    print("N: ", N)
+    # print("N: ", N)
     # Define bandpass filter
     def butter_bandpass(lowcut, highcut, fs, order=8):
         nyq = 0.5 * fs
